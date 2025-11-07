@@ -2,7 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const cors = require('cors');
-const pgSession = require('connect-pg-simple')(session);
+// เอา pgSession ไว้ใน conditional แทน
 const pool = require('./db'); // pg Pool
 require('dotenv').config();
 
@@ -80,20 +80,60 @@ app.get('/', (req, res) => {
  * ---------------------------------------------------------------- */
 // app.set('trust proxy', 1); // ✅ เปิดเมื่อมี proxy และจะใช้ cookie.secure:true
 
-const sessionStore = new pgSession({ pool, createTableIfMissing: false }); // ใช้ pg pool (Neon)
-app.use(session({
-  name: 'mc.sid',
-  secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 86400000,   // 1 วัน
-    httpOnly: true,
-    sameSite: isProd ? 'none' : 'lax', // ถ้าเป็น production และข้ามโดเมนต้องใช้ 'none'
-    secure: isProd,      // เปิด true เมื่อเป็น production (HTTPS)
-  },
-}));
+// Setup session - เช็คก่อนว่ามี DATABASE_URL หรือไม่
+console.log('[session] DATABASE_URL exists:', !!process.env.DATABASE_URL);
+
+if (process.env.DATABASE_URL && pool) {
+  try {
+    console.log('[session] Setting up PostgreSQL session store');
+    const pgSession = require('connect-pg-simple')(session);
+    const sessionStore = new pgSession({ pool, createTableIfMissing: false });
+    
+    app.use(session({
+      name: 'mc.sid',
+      secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
+      store: sessionStore,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        maxAge: 86400000,   // 1 วัน
+        httpOnly: true,
+        sameSite: isProd ? 'none' : 'lax',
+        secure: isProd,
+      },
+    }));
+    console.log('[session] PostgreSQL session store ready');
+  } catch (err) {
+    console.error('[session] Failed to setup PostgreSQL session store:', err.message);
+    // Fallback to memory session
+    app.use(session({
+      name: 'mc.sid',
+      secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        maxAge: 86400000,
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      },
+    }));
+  }
+} else {
+  console.log('[session] Using memory session store (no DATABASE_URL or pool)');
+  app.use(session({
+    name: 'mc.sid',
+    secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 86400000,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+    },
+  }));
+}
 
 /** ----------------------------------------------------------------
  * Static uploads
