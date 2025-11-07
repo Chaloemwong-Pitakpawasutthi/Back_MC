@@ -44,6 +44,35 @@ app.get('/_health', (req, res) => {
   return res.status(200).json({ status: 'ok' });
 });
 
+// Root endpoint - แสดงหน้าแรก
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>MC Backend API</title>
+      <style>body { font-family: Arial; margin: 40px; }</style>
+    </head>
+    <body>
+      <h1>🎵 MC Backend API</h1>
+      <p>Backend is running successfully!</p>
+      <h3>Available endpoints:</h3>
+      <ul>
+        <li><a href="/_health">/_health</a> - Health check</li>
+        <li><strong>/api/auth</strong> - Authentication routes</li>
+        <li><strong>/api/members</strong> - Members management</li>
+        <li><strong>/api/bands</strong> - Band management</li>
+        <li><strong>/api/schedules</strong> - Schedule management</li>
+        <li><strong>/api/finances</strong> - Finance management</li>
+        <li><strong>/api/projects</strong> - Project management</li>
+        <li><strong>/api/equipments</strong> - Equipment management</li>
+      </ul>
+      <p><small>Environment: ${process.env.NODE_ENV || 'development'}</small></p>
+    </body>
+    </html>
+  `);
+});
+
 /** ----------------------------------------------------------------
  * Session
  * - สำหรับ dev: secure:false, sameSite:lax เพียงพอ
