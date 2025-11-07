@@ -39,6 +39,11 @@ app.use(cors({
 app.use(express.json({ limit: '2mb' }));             // ✅ limit
 app.use(express.urlencoded({ extended: true, limit: '2mb' })); // ✅ limit
 
+// Health endpoint (ตอบได้โดยไม่ต้องเชื่อม DB) - ช่วยให้ตรวจปัญหา timeout ได้ง่ายขึ้น
+app.get('/_health', (req, res) => {
+  return res.status(200).json({ status: 'ok' });
+});
+
 /** ----------------------------------------------------------------
  * Session
  * - สำหรับ dev: secure:false, sameSite:lax เพียงพอ
@@ -46,7 +51,7 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' })); // ✅ limit
  * ---------------------------------------------------------------- */
 // app.set('trust proxy', 1); // ✅ เปิดเมื่อมี proxy และจะใช้ cookie.secure:true
 
-const sessionStore = new pgSession({ pool }); // ใช้ pg pool (Neon)
+const sessionStore = new pgSession({ pool, createTableIfMissing: false }); // ใช้ pg pool (Neon)
 app.use(session({
   name: 'mc.sid',
   secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
