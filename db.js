@@ -9,7 +9,7 @@ if (!connectionString) {
   module.exports = null;
 } else {
   const poolConfig = {
-    connectionString,
+    connectionString , 
     ssl: { rejectUnauthorized: false },
     max: parseInt(process.env.PG_MAX_CLIENTS || '6', 10),
     idleTimeoutMillis: parseInt(process.env.PG_IDLE_MS || '30000', 10),
