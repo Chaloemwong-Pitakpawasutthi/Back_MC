@@ -12,7 +12,13 @@ const poolConfig = {
 
 // Reuse pool across lambda invocations (Vercel serverless)
 if (!global.__pgPool) {
+  console.log('[db] Creating new pg Pool');
   global.__pgPool = new Pool(poolConfig);
+  global.__pgPool.on('error', (err) => {
+    console.error('[db] Unexpected PG Pool Error', err && (err.stack || err));
+  });
+} else {
+  console.log('[db] Reusing existing pg Pool');
 }
 
 module.exports = global.__pgPool;
